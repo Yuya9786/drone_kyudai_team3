@@ -473,7 +473,8 @@ void command_cb(const std_msgs::String::ConstPtr& msg)
 {
 
 	ROS_INFO("recv message");
-	Control_halt();
+	if(msg->data == "start") Control_start();
+	if(msg->data == "halt") Control_halt();
 
 }
 
