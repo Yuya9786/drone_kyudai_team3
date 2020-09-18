@@ -42,6 +42,7 @@ float current_heading_g;
 float local_offset_g;
 float correction_heading_g = 0;
 float local_desired_heading_g; 
+int flag_return = 0;
 
 
 
@@ -475,6 +476,10 @@ void command_cb(const std_msgs::String::ConstPtr& msg)
 	ROS_INFO("recv message");
 	if(msg->data == "start") Control_start();
 	if(msg->data == "halt") Control_halt();
+	if(msg->data == "return") {
+		Control_return();
+		flag_return = 1;
+	}
 
 }
 
@@ -538,11 +543,21 @@ void gnc_init() {
 void gnc_background (void) {
 	static ros::Duration duration = ros::Duration(0.5);
 	ros::spinOnce();
-	if (is_waypoint_set) {
+	if (is_waypoint_set && flag_return==0) {
 		if (gnc_check_waypoint_reached()) {
 			MAV_Port1_ready();
 			is_waypoint_set = false;
+
 		}
+
+	}
+	if (is_waypoint_set && flag_return==1) {
+		if (gnc_check_waypoint_reached()) {
+			Control_return();
+			is_waypoint_set = false;
+
+		}
+
 	}
 	duration.sleep();
 }
