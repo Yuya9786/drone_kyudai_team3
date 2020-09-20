@@ -24,6 +24,7 @@
 #include <iostream>
 #include <string>
 #include <signal.h>
+#include <sensor_msgs/BatteryState.h>
 
 /**
 \defgroup control_functions
@@ -55,6 +56,7 @@ ros::ServiceClient land_client;
 ros::ServiceClient set_mode_client;
 ros::ServiceClient takeoff_client;
 ros::Subscriber command_sub;
+ros::Subscriber battery_sub;
 
 /**
 \ingroup control_functions
@@ -406,6 +408,11 @@ int set_mode(std::string mode)
     }
 }
 
+void battery_cb(const sensor_msgs::BatteryState::ConstPtr& msg)
+{
+	ROS_INFO("%f",msg->percentage);
+}
+
 void scan_cb(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
 	// sensor_msgs::LaserScan current_2D_scan;
@@ -476,6 +483,9 @@ void command_cb(const std_msgs::String::ConstPtr& msg)
 	ROS_INFO("recv message");
 	if(msg->data == "start") Control_start();
 	if(msg->data == "halt") Control_halt();
+	if(msg->data == "toA") Control_toA();
+	if(msg->data == "toB") Control_toB();
+	if(msg->data == "toC") Control_toC();
 	if(msg->data == "return") {
 		Control_return();
 		flag_return = 1;
@@ -508,6 +518,7 @@ int init_publisher_subscriber(ros::NodeHandle controlnode)
 	takeoff_client = controlnode.serviceClient<mavros_msgs::CommandTOL>((ros_namespace + "/mavros/cmd/takeoff").c_str());
 	collision_sub = controlnode.subscribe<sensor_msgs::LaserScan>("/spur/laser/scan", 1, scan_cb);
 	command_sub = controlnode.subscribe("cmd", 10, command_cb);
+//	battery_sub = controlnode.subscribe<sensor_msgs::BatteryState>("/mavros/battery", 1, battery_cb);
 
 }
 
