@@ -153,6 +153,57 @@ INSERT INTO PE_PE
 	"c266a8d5-aa61-43f4-9d01-7e2baedb603e",
 	"00000000-0000-0000-0000-000000000000",
 	1);
+INSERT INTO S_SYNC
+	VALUES ("271d9dd1-13a4-4f5c-b82e-cd18feddb1e3",
+	"00000000-0000-0000-0000-000000000000",
+	'intoroom',
+	'',
+	'select any ctrl from instances of Controller;
+generate Controller8:''intoroom'' to ctrl;',
+	"ba5eda7a-def5-0000-0000-000000000000",
+	1,
+	'',
+	0);
+INSERT INTO PE_PE
+	VALUES ("271d9dd1-13a4-4f5c-b82e-cd18feddb1e3",
+	1,
+	"c266a8d5-aa61-43f4-9d01-7e2baedb603e",
+	"00000000-0000-0000-0000-000000000000",
+	1);
+INSERT INTO S_SYNC
+	VALUES ("32e3653e-8436-4095-84b7-b0ff5781d39a",
+	"00000000-0000-0000-0000-000000000000",
+	'toD',
+	'',
+	'select any ctrl from instances of Controller;
+generate Controller9:''toD'' to ctrl;',
+	"ba5eda7a-def5-0000-0000-000000000000",
+	1,
+	'',
+	0);
+INSERT INTO PE_PE
+	VALUES ("32e3653e-8436-4095-84b7-b0ff5781d39a",
+	1,
+	"c266a8d5-aa61-43f4-9d01-7e2baedb603e",
+	"00000000-0000-0000-0000-000000000000",
+	1);
+INSERT INTO S_SYNC
+	VALUES ("95ca040d-861b-4cff-9d67-1ce6cccd826a",
+	"00000000-0000-0000-0000-000000000000",
+	'toE',
+	'',
+	'select any ctrl from instances of Controller;
+generate Controller10:''toE'' to ctrl;',
+	"ba5eda7a-def5-0000-0000-000000000000",
+	1,
+	'',
+	0);
+INSERT INTO PE_PE
+	VALUES ("95ca040d-861b-4cff-9d67-1ce6cccd826a",
+	1,
+	"c266a8d5-aa61-43f4-9d01-7e2baedb603e",
+	"00000000-0000-0000-0000-000000000000",
+	1);
 INSERT INTO PE_PE
 	VALUES ("c266a8d5-aa61-43f4-9d01-7e2baedb603e",
 	1,

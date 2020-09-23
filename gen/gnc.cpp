@@ -44,6 +44,19 @@ float local_offset_g;
 float correction_heading_g = 0;
 float local_desired_heading_g; 
 int flag_return = 0;
+//int flag_intoroom = 0;
+int flag_toA = 0;
+int flag_toB = 0;
+int flag_toC = 0;
+int flag_toD = 0;
+int flag_toE = 0;
+
+float pointA[2] = {3,3};
+float pointB[2] = {-3,3};
+float pointC[2] = {-3,-3};
+float pointD[2] = {3,-3};
+float pointE[2] = {5,0};
+void check_pose_to_change_flag(float, float, char);
 
 
 
@@ -483,9 +496,40 @@ void command_cb(const std_msgs::String::ConstPtr& msg)
 	ROS_INFO("recv message");
 	if(msg->data == "start") Control_start();
 	if(msg->data == "halt") Control_halt();
-	if(msg->data == "toA") Control_toA();
-	if(msg->data == "toB") Control_toB();
-	if(msg->data == "toC") Control_toC();
+	if(msg->data == "toA") {
+		ROS_INFO("111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
+		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
+		Control_toA();
+		flag_toA = 1;
+		check_pose_to_change_flag(0.0, 0.0, 'A');
+		check_pose_to_change_flag(pointB[0], pointB[1], 'A');
+	}
+	if(msg->data == "toB") {
+		Control_toB();
+		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
+		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
+		flag_toB = 1;
+		check_pose_to_change_flag(pointA[0], pointA[1], 'B');
+		check_pose_to_change_flag(pointC[0], pointC[1], 'B');
+	}
+	if(msg->data == "toC") {
+		Control_toC();
+		flag_toC = 1;
+		check_pose_to_change_flag(pointB[0], pointB[1], 'C');
+		check_pose_to_change_flag(pointD[0], pointD[1], 'C');
+	}
+	if(msg->data == "toD") {
+		Control_toD();
+		flag_toD = 1;
+		check_pose_to_change_flag(pointC[0], pointC[1], 'D');
+		check_pose_to_change_flag(pointE[0], pointE[1], 'D');
+	}
+	if(msg->data == "toE") {
+		Control_toE();
+		flag_toE = 1;
+		check_pose_to_change_flag(pointD[0], pointD[1], 'E');
+	}
+
 	if(msg->data == "return") {
 		Control_return();
 		flag_return = 1;
@@ -554,7 +598,7 @@ void gnc_init() {
 void gnc_background (void) {
 	static ros::Duration duration = ros::Duration(0.5);
 	ros::spinOnce();
-	if (is_waypoint_set && flag_return==0) {
+	if (is_waypoint_set && flag_return==0 && flag_toA==0 && flag_toB==0 && flag_toC==0 && flag_toD==0 && flag_toE==0) {
 		if (gnc_check_waypoint_reached()) {
 			MAV_Port1_ready();
 			is_waypoint_set = false;
@@ -568,8 +612,53 @@ void gnc_background (void) {
 			is_waypoint_set = false;
 
 		}
-
 	}
+	if (is_waypoint_set && flag_toA==1) {
+		if (gnc_check_waypoint_reached()) {
+			ROS_INFO("1111111111111111111%d",waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
+			Control_toA();
+			is_waypoint_set = false;
+			check_pose_to_change_flag(pointB[0], pointB[1], 'A');
+
+		}
+	}
+		if (is_waypoint_set && flag_toB==1) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toB();
+				is_waypoint_set = false;
+				check_pose_to_change_flag(pointA[0], pointA[1], 'B');
+				check_pose_to_change_flag(pointC[0], pointC[1], 'B');
+
+			}
+		}
+		if (is_waypoint_set && flag_toC==1) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toC();
+				is_waypoint_set = false;
+				check_pose_to_change_flag(pointB[0], pointB[1], 'C');
+				check_pose_to_change_flag(pointD[0], pointD[1], 'C');
+
+			}
+		}
+		if (is_waypoint_set && flag_toD==1) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toD();
+				ROS_INFO("11111111111111111111");
+				is_waypoint_set = false;
+				check_pose_to_change_flag(pointC[0], pointC[1], 'D');
+				check_pose_to_change_flag(pointE[0], pointE[1], 'D');
+
+					}
+		}
+		if (is_waypoint_set && flag_toE==1) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toE();
+				ROS_INFO("11111111111111111111");
+				is_waypoint_set = false;
+				check_pose_to_change_flag(pointD[0], pointD[1], 'E');
+
+					}
+		}
 	duration.sleep();
 }
 
@@ -577,4 +666,20 @@ void gnc_shutdown(void) {
 	ros::shutdown();
 	extern bool Escher_run_flag;
 	Escher_run_flag = false;
+}
+
+void check_pose_to_change_flag(float posX, float posY, char point){
+	ROS_INFO("222222222222222222 %f",current_pose_g.pose.pose.position.x-posX);
+	ROS_INFO("222222222222222222 %f",current_pose_g.pose.pose.position.y-posY);
+	if((abs(current_pose_g.pose.pose.position.x-posX)<1.2)&&(abs(current_pose_g.pose.pose.position.y-posY)<1.2)) {
+		switch (point){
+		case 'A':flag_toA = 0; break;
+		case 'B':flag_toB = 0; break;
+		case 'C':flag_toC = 0; break;
+		case 'D':flag_toD = 0; break;
+		case 'E':flag_toE = 0; break;
+		default: break;
+		}
+	}
+
 }
