@@ -497,17 +497,17 @@ void command_cb(const std_msgs::String::ConstPtr& msg)
 	if(msg->data == "start") Control_start();
 	if(msg->data == "halt") Control_halt();
 	if(msg->data == "toA") {
-		ROS_INFO("111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
-		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
-		Control_toA();
+//		ROS_INFO("111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
+//		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
+//		Control_toA();
 		flag_toA = 1;
 		check_pose_to_change_flag(0.0, 0.0, 'A');
 		check_pose_to_change_flag(pointB[0], pointB[1], 'A');
 	}
 	if(msg->data == "toB") {
 		Control_toB();
-		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
-		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
+//		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
+//		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
 		flag_toB = 1;
 		check_pose_to_change_flag(pointA[0], pointA[1], 'B');
 		check_pose_to_change_flag(pointC[0], pointC[1], 'B');
@@ -615,7 +615,6 @@ void gnc_background (void) {
 	}
 	if (is_waypoint_set && flag_toA==1) {
 		if (gnc_check_waypoint_reached()) {
-			ROS_INFO("1111111111111111111%d",waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
 			Control_toA();
 			is_waypoint_set = false;
 			check_pose_to_change_flag(pointB[0], pointB[1], 'A');
@@ -643,7 +642,6 @@ void gnc_background (void) {
 		if (is_waypoint_set && flag_toD==1) {
 			if (gnc_check_waypoint_reached()) {
 				Control_toD();
-				ROS_INFO("11111111111111111111");
 				is_waypoint_set = false;
 				check_pose_to_change_flag(pointC[0], pointC[1], 'D');
 				check_pose_to_change_flag(pointE[0], pointE[1], 'D');
@@ -653,7 +651,6 @@ void gnc_background (void) {
 		if (is_waypoint_set && flag_toE==1) {
 			if (gnc_check_waypoint_reached()) {
 				Control_toE();
-				ROS_INFO("11111111111111111111");
 				is_waypoint_set = false;
 				check_pose_to_change_flag(pointD[0], pointD[1], 'E');
 
@@ -669,8 +666,8 @@ void gnc_shutdown(void) {
 }
 
 void check_pose_to_change_flag(float posX, float posY, char point){
-	ROS_INFO("222222222222222222 %f",current_pose_g.pose.pose.position.x-posX);
-	ROS_INFO("222222222222222222 %f",current_pose_g.pose.pose.position.y-posY);
+	ROS_INFO("X_diff %f",current_pose_g.pose.pose.position.x-posX);
+	ROS_INFO("Y_diff %f",current_pose_g.pose.pose.position.y-posY);
 	if((abs(current_pose_g.pose.pose.position.x-posX)<1.2)&&(abs(current_pose_g.pose.pose.position.y-posY)<1.2)) {
 		switch (point){
 		case 'A':flag_toA = 0; break;
