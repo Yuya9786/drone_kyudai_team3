@@ -44,18 +44,19 @@ float local_offset_g;
 float correction_heading_g = 0;
 float local_desired_heading_g; 
 int flag_return = 0;
-//int flag_intoroom = 0;
+
 int flag_toA = 0;
 int flag_toB = 0;
 int flag_toC = 0;
 int flag_toD = 0;
 int flag_toE = 0;
 
-float pointA[2] = {3,3};
-float pointB[2] = {-3,3};
-float pointC[2] = {-3,-3};
-float pointD[2] = {3,-3};
-float pointE[2] = {5,0};
+float pointO[2] = {0,0};
+float pointA[2] = {0.4,5.2};
+float pointB[2] = {-7.4,4.5};
+float pointC[2] = {-3.5,11.7};
+float pointD[2] = {9.4,9};
+float pointE[2] = {5.2,4.5};
 void check_pose_to_change_flag(float, float, char);
 
 
@@ -421,10 +422,18 @@ int set_mode(std::string mode)
     }
 }
 
+
 void battery_cb(const sensor_msgs::BatteryState::ConstPtr& msg)
 {
-	ROS_INFO("%f",msg->percentage);
+    ROS_INFO("battery: %f", msg->percentage);
+    if (msg->percentage < 0.9 && flag_return == 0)
+    {
+    	Control_return();
+    	flag_return = 1;
+
+    }
 }
+
 
 void scan_cb(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
@@ -499,10 +508,11 @@ void command_cb(const std_msgs::String::ConstPtr& msg)
 	if(msg->data == "toA") {
 //		ROS_INFO("111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
 //		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
-//		Control_toA();
+		Control_toA();
 		flag_toA = 1;
-		check_pose_to_change_flag(0.0, 0.0, 'A');
+		check_pose_to_change_flag(pointO[0], pointO[1], 'A');
 		check_pose_to_change_flag(pointB[0], pointB[1], 'A');
+		ROS_INFO("!!!!!!%d",flag_toA);
 	}
 	if(msg->data == "toB") {
 		Control_toB();
@@ -562,7 +572,7 @@ int init_publisher_subscriber(ros::NodeHandle controlnode)
 	takeoff_client = controlnode.serviceClient<mavros_msgs::CommandTOL>((ros_namespace + "/mavros/cmd/takeoff").c_str());
 	collision_sub = controlnode.subscribe<sensor_msgs::LaserScan>("/spur/laser/scan", 1, scan_cb);
 	command_sub = controlnode.subscribe("cmd", 10, command_cb);
-//	battery_sub = controlnode.subscribe<sensor_msgs::BatteryState>("/mavros/battery", 1, battery_cb);
+	battery_sub = controlnode.subscribe<sensor_msgs::BatteryState>("/mavros/battery", 1, battery_cb);
 
 }
 
@@ -606,56 +616,58 @@ void gnc_background (void) {
 		}
 
 	}
-	if (is_waypoint_set && flag_return==1) {
+	else if (is_waypoint_set && flag_return==1) {
 		if (gnc_check_waypoint_reached()) {
 			Control_return();
 			is_waypoint_set = false;
 
 		}
 	}
-	if (is_waypoint_set && flag_toA==1) {
+	else if (is_waypoint_set && flag_toA==1) {
 		if (gnc_check_waypoint_reached()) {
 			Control_toA();
 			is_waypoint_set = false;
+			check_pose_to_change_flag(pointO[0], pointO[1], 'A');
 			check_pose_to_change_flag(pointB[0], pointB[1], 'A');
+			ROS_INFO("!!!!!!%d",flag_toA);
 
 		}
 	}
-		if (is_waypoint_set && flag_toB==1) {
-			if (gnc_check_waypoint_reached()) {
-				Control_toB();
-				is_waypoint_set = false;
-				check_pose_to_change_flag(pointA[0], pointA[1], 'B');
-				check_pose_to_change_flag(pointC[0], pointC[1], 'B');
+	else if (is_waypoint_set && flag_toB==1) {
+		if (gnc_check_waypoint_reached()) {
+			Control_toB();
+			is_waypoint_set = false;
+			check_pose_to_change_flag(pointA[0], pointA[1], 'B');
+			check_pose_to_change_flag(pointC[0], pointC[1], 'B');
+
+		}
+	}
+	else if (is_waypoint_set && flag_toC==1) {
+		if (gnc_check_waypoint_reached()) {
+			Control_toC();
+			is_waypoint_set = false;
+			check_pose_to_change_flag(pointB[0], pointB[1], 'C');
+			check_pose_to_change_flag(pointD[0], pointD[1], 'C');
+
+		}
+	}
+	else if (is_waypoint_set && flag_toD==1) {
+		if (gnc_check_waypoint_reached()) {
+			Control_toD();
+			is_waypoint_set = false;
+			check_pose_to_change_flag(pointC[0], pointC[1], 'D');
+			check_pose_to_change_flag(pointE[0], pointE[1], 'D');
 
 			}
-		}
-		if (is_waypoint_set && flag_toC==1) {
-			if (gnc_check_waypoint_reached()) {
-				Control_toC();
-				is_waypoint_set = false;
-				check_pose_to_change_flag(pointB[0], pointB[1], 'C');
-				check_pose_to_change_flag(pointD[0], pointD[1], 'C');
+	}
+	else if (is_waypoint_set && flag_toE==1) {
+		if (gnc_check_waypoint_reached()) {
+			Control_toE();
+			is_waypoint_set = false;
+			check_pose_to_change_flag(pointD[0], pointD[1], 'E');
 
 			}
-		}
-		if (is_waypoint_set && flag_toD==1) {
-			if (gnc_check_waypoint_reached()) {
-				Control_toD();
-				is_waypoint_set = false;
-				check_pose_to_change_flag(pointC[0], pointC[1], 'D');
-				check_pose_to_change_flag(pointE[0], pointE[1], 'D');
-
-					}
-		}
-		if (is_waypoint_set && flag_toE==1) {
-			if (gnc_check_waypoint_reached()) {
-				Control_toE();
-				is_waypoint_set = false;
-				check_pose_to_change_flag(pointD[0], pointD[1], 'E');
-
-					}
-		}
+	}
 	duration.sleep();
 }
 
@@ -668,7 +680,7 @@ void gnc_shutdown(void) {
 void check_pose_to_change_flag(float posX, float posY, char point){
 	ROS_INFO("X_diff %f",current_pose_g.pose.pose.position.x-posX);
 	ROS_INFO("Y_diff %f",current_pose_g.pose.pose.position.y-posY);
-	if((abs(current_pose_g.pose.pose.position.x-posX)<1.2)&&(abs(current_pose_g.pose.pose.position.y-posY)<1.2)) {
+	if((abs(current_pose_g.pose.pose.position.x-posX)<1.5)&&(abs(current_pose_g.pose.pose.position.y-posY)<1.5)) {
 		switch (point){
 		case 'A':flag_toA = 0; break;
 		case 'B':flag_toB = 0; break;
