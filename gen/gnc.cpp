@@ -421,8 +421,8 @@ int set_mode(std::string mode)
 
 void battery_cb(const sensor_msgs::BatteryState::ConstPtr& msg)
 {
-    ROS_INFO("battery: %f", msg->percentage);
-    if (msg->percentage < 0.7 && (flags_to_points & 0b1 == 0))
+    ROS_INFO("battery: %f, %d", msg->percentage, flags_to_points);
+    if (msg->percentage < 0.9 && (flags_to_points != 0b1))
     {
     	Control_return();
     	flags_to_points = 0b1;
