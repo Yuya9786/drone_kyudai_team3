@@ -24,6 +24,7 @@
 #include <iostream>
 #include <string>
 #include <signal.h>
+#include <sensor_msgs/BatteryState.h>
 
 /**
 \defgroup control_functions
@@ -42,7 +43,17 @@ float current_heading_g;
 float local_offset_g;
 float correction_heading_g = 0;
 float local_desired_heading_g; 
-int flag_return = 0;
+//int flag_return = 0;
+
+int flags_to_points = 0;
+
+std::pair<float, float> pointO = {0,0};
+std::pair<float, float> pointA = {0.4,5.2};
+std::pair<float, float> pointB = {-7.4,4.5};
+std::pair<float, float> pointC = {-3.5,11.7};
+std::pair<float, float> pointD = {9.4,9};
+std::pair<float, float> pointE = {5.2,4.5};
+void check_pose_to_change_flag(char);
 
 
 
@@ -55,6 +66,7 @@ ros::ServiceClient land_client;
 ros::ServiceClient set_mode_client;
 ros::ServiceClient takeoff_client;
 ros::Subscriber command_sub;
+ros::Subscriber battery_sub;
 
 /**
 \ingroup control_functions
@@ -122,7 +134,7 @@ float gnc_get_heading()
 // Heading input should match the ENU coordinate system
 /**
 \ingroup control_functions
-This function is used to specify the drone’s heading in the local reference frame. Psi is a counter clockwise rotation following the drone’s reference frame defined by the x axis through the right side of the drone with the y axis through the front of the drone. 
+This function is used to specify the drone\u2019s heading in the local reference frame. Psi is a counter clockwise rotation following the drone\u2019s reference frame defined by the x axis through the right side of the drone with the y axis through the front of the drone.
 @returns n/a
 */
 void gnc_set_heading(float heading)
@@ -155,7 +167,7 @@ void gnc_set_heading(float heading)
 // set position to fly to in the local frame
 /**
 \ingroup control_functions
-This function is used to command the drone to fly to a waypoint. These waypoints should be specified in the local reference frame. This is typically defined from the location the drone is launched. Psi is counter clockwise rotation following the drone’s reference frame defined by the x axis through the right side of the drone with the y axis through the front of the drone. 
+This function is used to command the drone to fly to a waypoint. These waypoints should be specified in the local reference frame. This is typically defined from the location the drone is launched. Psi is counter clockwise rotation following the drone\u2019s reference frame defined by the x axis through the right side of the drone with the y axis through the front of the drone.
 @returns n/a
 */
 void gnc_set_destination(float x, float y, float z)
@@ -208,7 +220,7 @@ int wait4connect()
 }
 /**
 \ingroup control_functions
-Wait for strat will hold the program until the user signals the FCU to enther mode guided. This is typically done from a switch on the safety pilot’s remote or from the ground control station.
+Wait for strat will hold the program until the user signals the FCU to enther mode guided. This is typically done from a switch on the safety pilot\u2019s remote or from the ground control station.
 @returns 0 - mission started
 @returns -1 - failed to start mission
 */
@@ -406,6 +418,18 @@ int set_mode(std::string mode)
     }
 }
 
+
+void battery_cb(const sensor_msgs::BatteryState::ConstPtr& msg)
+{
+    ROS_INFO("battery: %f, %d", msg->percentage, flags_to_points);
+    if (msg->percentage < 0.9 && (flags_to_points != 0b1))
+    {
+    	Control_return();
+    	flags_to_points = 0b1;
+    }
+}
+
+
 void scan_cb(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
 	// sensor_msgs::LaserScan current_2D_scan;
@@ -475,10 +499,41 @@ void command_cb(const std_msgs::String::ConstPtr& msg)
 
 	ROS_INFO("recv message");
 	if(msg->data == "start") Control_start();
-	if(msg->data == "halt") Control_halt();
-	if(msg->data == "return") {
+	else if(msg->data == "halt") Control_halt();
+	else if(msg->data == "toA") {
+//		ROS_INFO("111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
+//		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
+		Control_toA();
+		flags_to_points = 0b1 << 1;
+		check_pose_to_change_flag('A');
+//		ROS_INFO("!!!!!!%d",flag_toA);
+	}
+	else if(msg->data == "toB") {
+//		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.x, waypoint_g.pose.position.x - current_pose_g.pose.pose.position.x);
+//		ROS_INFO("1111111111111111111%f %f",waypoint_g.pose.position.y, waypoint_g.pose.position.y - current_pose_g.pose.pose.position.y);
+		Control_toB();
+		flags_to_points = 0b1 << 2;
+		check_pose_to_change_flag('B');
+	}
+	else if(msg->data == "toC") {
+		Control_toC();
+		flags_to_points = 0b1 << 3;
+		check_pose_to_change_flag('C');
+	}
+	else if(msg->data == "toD") {
+		Control_toD();
+		flags_to_points = 0b1 << 4;
+		check_pose_to_change_flag('D');
+	}
+	else if(msg->data == "toE") {
+		Control_toE();
+		flags_to_points = 0b1 << 5;
+		check_pose_to_change_flag('E');
+	}
+
+	else if(msg->data == "return") {
 		Control_return();
-		flag_return = 1;
+		flags_to_points = 0b1;
 	}
 
 }
@@ -508,6 +563,7 @@ int init_publisher_subscriber(ros::NodeHandle controlnode)
 	takeoff_client = controlnode.serviceClient<mavros_msgs::CommandTOL>((ros_namespace + "/mavros/cmd/takeoff").c_str());
 	collision_sub = controlnode.subscribe<sensor_msgs::LaserScan>("/spur/laser/scan", 1, scan_cb);
 	command_sub = controlnode.subscribe("cmd", 10, command_cb);
+	battery_sub = controlnode.subscribe<sensor_msgs::BatteryState>("/mavros/battery", 1, battery_cb);
 
 }
 
@@ -543,21 +599,50 @@ void gnc_init() {
 void gnc_background (void) {
 	static ros::Duration duration = ros::Duration(0.5);
 	ros::spinOnce();
-	if (is_waypoint_set && flag_return==0) {
-		if (gnc_check_waypoint_reached()) {
-			MAV_Port1_ready();
-			is_waypoint_set = false;
+	if (is_waypoint_set) {
+		if (flags_to_points == 0) {
+			if (gnc_check_waypoint_reached()) {
+				MAV_Port1_ready();
+				is_waypoint_set = false;
+			}
 
+		} else if (flags_to_points >> 5 != 0) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toE();
+				is_waypoint_set = false;
+				check_pose_to_change_flag('E');
+			}
+		} else if (flags_to_points >> 4 != 0) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toD();
+				is_waypoint_set = false;
+				check_pose_to_change_flag('D');
+	//			ROS_INFO("!!!!!!%d",flag_toA);
+			}
+		} else if (flags_to_points >> 3 != 0) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toC();
+				is_waypoint_set = false;
+				check_pose_to_change_flag('C');
+			}
+		} else if (flags_to_points >> 2 != 0) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toB();
+				is_waypoint_set = false;
+				check_pose_to_change_flag('B');
+			}
+		} else if (flags_to_points >> 1 != 0) {
+			if (gnc_check_waypoint_reached()) {
+				Control_toA();
+				is_waypoint_set = false;
+				check_pose_to_change_flag('A');
+			}
+		} else if (flags_to_points != 0) {
+			if (gnc_check_waypoint_reached()) {
+				Control_return();
+				is_waypoint_set = false;
+			}
 		}
-
-	}
-	if (is_waypoint_set && flag_return==1) {
-		if (gnc_check_waypoint_reached()) {
-			Control_return();
-			is_waypoint_set = false;
-
-		}
-
 	}
 	duration.sleep();
 }
@@ -566,4 +651,34 @@ void gnc_shutdown(void) {
 	ros::shutdown();
 	extern bool Escher_run_flag;
 	Escher_run_flag = false;
+}
+
+void check_pose_to_change_flag(char point){
+//	ROS_INFO("X_diff %f",current_pose_g.pose.pose.position.x-pos.first);
+//	ROS_INFO("Y_diff %f",current_pose_g.pose.pose.position.y-pos.second);
+
+	switch (point){
+		case 'A':
+			if(((abs(current_pose_g.pose.pose.position.x-pointO.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointO.second)<1.5)) || ((abs(current_pose_g.pose.pose.position.x-pointB.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointB.second)<1.5)))
+				flags_to_points = 0;
+			break;
+		case 'B':
+			if(((abs(current_pose_g.pose.pose.position.x-pointA.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointA.second)<1.5)) || ((abs(current_pose_g.pose.pose.position.x-pointC.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointC.second)<1.5)))
+				flags_to_points = 0;
+			break;
+		case 'C':
+			if(((abs(current_pose_g.pose.pose.position.x-pointB.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointB.second)<1.5)) || ((abs(current_pose_g.pose.pose.position.x-pointD.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointD.second)<1.5)))
+				flags_to_points = 0;
+			break;
+		case 'D':
+			if(((abs(current_pose_g.pose.pose.position.x-pointC.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointC.second)<1.5)) || ((abs(current_pose_g.pose.pose.position.x-pointE.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointE.second)<1.5)))
+				flags_to_points = 0;
+			break;
+		case 'E':
+			if((abs(current_pose_g.pose.pose.position.x-pointD.first)<1.5)&&(abs(current_pose_g.pose.pose.position.y-pointD.second)<1.5))
+				flags_to_points = 0;
+			break;
+		default:
+			break;
+	}
 }
